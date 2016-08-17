@@ -2,7 +2,7 @@ var map = require('through2-map');
 var _ = require('lodash');
 var peliasConfig = require( 'pelias-config' ).generate();
 
-var labels = peliasConfig.imports.wofPipNames;
+var wofLabels = peliasConfig.imports.wofPipNames || {};
 
 module.exports.create = function() {
   // this function extracts the id, name, placetype, hierarchy, and geometry
@@ -35,6 +35,8 @@ function getName(wofData) {
   if (isUsCounty(wofData)) {
     return wofData.properties['qs:a2_alt']
   }
+  var type = wofData.properties['wof:placetype'];
+  var labels = wofLabels[type];
   if (labels) {
     var nameArray = [];
     for (var i=0; i<labels.length; i++) {
