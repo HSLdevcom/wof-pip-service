@@ -32,7 +32,8 @@ var defaultLayers = module.exports.defaultLayers = [
   'macrocounty', // 350
   'macroregion', // 82
   'neighbourhood', // 62936
-  'region' // 4698
+  'region', // 4698
+  'postalcode'
 ];
 
 module.exports.create = function createPIPService(layers, callback) {
