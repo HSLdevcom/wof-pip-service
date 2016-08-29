@@ -31,7 +31,7 @@ function readData(directory, layer, callback) {
     .pipe(filterOutNamelessRecords.create())
     .pipe(filterOutUnimportantRecords.create())
     .pipe(extractFields.create())
-//    .pipe(simplifyGeometry.create())
+    .pipe(simplifyGeometry.create())
     .pipe(sink.obj(function(feature) {
       features.push(feature);
     }))
