@@ -22,7 +22,7 @@ var workers = {};
 var responseQueue = {};
 
 // don't include `country` here, it makes the bookkeeping more difficult later
-var defaultLayers = module.exports.defaultLayers = [
+var defaultLayers = peliasConfig.imports.defaultAdminLayers || [
   'borough', // 5
   'county', // 18166
   'dependency', // 39
@@ -32,8 +32,11 @@ var defaultLayers = module.exports.defaultLayers = [
   'macrocounty', // 350
   'macroregion', // 82
   'neighbourhood', // 62936
-  'region' // 4698
+  'region', // 4698
+  'postalcode'
 ];
+
+module.exports.defaultLayers = defaultLayers;
 
 module.exports.create = function createPIPService(layers, callback) {
   if (!hasDataDirectory()) {
@@ -48,9 +51,11 @@ module.exports.create = function createPIPService(layers, callback) {
   }
 
   // if no layers were supplied, then use default layers and the only parameter
-  //  is the callback
-  if (!(layers instanceof Array) && typeof layers === 'function') {
-    callback = layers;
+  // is the callback
+  if (!(layers instanceof Array)) {
+    if(typeof layers === 'function') {
+      callback = layers;
+    }
     layers = defaultLayers;
   }
 

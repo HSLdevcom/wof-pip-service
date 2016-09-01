@@ -71,7 +71,8 @@ function handleType(type) {
   'macrocounty',
   'macroregion',
   'neighbourhood',
-  'region'
+  'region',
+  'postalcode'
 ].forEach(function(type) {
   handleType(type);
 });
