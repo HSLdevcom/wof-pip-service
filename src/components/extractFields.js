@@ -54,7 +54,10 @@ function getName(wofData) {
     }
   }
 
-  // default behavior
+  if (wofData.properties.hasOwnProperty('wof:label')) {
+    return wofData.properties['wof:label'];
+  }
+
   return wofData.properties['wof:name'];
 
 }

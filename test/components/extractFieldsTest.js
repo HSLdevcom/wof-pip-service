@@ -157,4 +157,34 @@ tape('extractFields tests', function(test) {
 
   });
 
+  test.test('when available, wof:label should be used instead of wof:name', function(t) {
+    var input = {
+      properties: {}
+    };
+    input.properties['wof:id'] = 17;
+    input.properties['wof:label'] = 'wof:label value';
+    input.properties['wof:name'] = 'wof:name value';
+    input.properties['iso:country'] = 'US';
+    input.properties['wof:placetype'] = 'county';
+    input.properties['wof:hierarchy'] = 'Feature hierarchy';
+
+    var expected = {
+      properties: {
+        Id: 17,
+        Name: 'wof:label value',
+        Placetype: 'county',
+        Hierarchy: 'Feature hierarchy'
+      },
+      geometry: undefined
+    };
+
+    var extractFields = require('../../src/components/extractFields').create();
+
+    test_stream([input], extractFields, function(err, actual) {
+      t.deepEqual(actual, [expected], 'should be equal');
+      t.end();
+    });
+
+  });
+
 });
