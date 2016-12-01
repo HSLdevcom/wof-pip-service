@@ -1,4 +1,5 @@
-var microtime = require('microtime');
+'use strict';
+
 var createPIPService = require('../src/index.js').create;
 var fs = require('fs');
 var async = require('async');
@@ -21,33 +22,45 @@ var layers = [
   'region' // 4698
 ];
 
-var startTime = microtime.now();
+function test(callback) {
+  var startTime = process.hrtime();
 
-createPIPService(layers, function (err, pipService) {
+  createPIPService(layers, function (err, pipService) {
 
-  console.log('Total load time (minutes) = ', (microtime.now() - startTime)/1000000/60);
+    console.log('Total load time (minutes) = ', (getMicroSeconds(process.hrtime(startTime))/1000000/60));
 
-  inputData = _.concat(inputData, _.clone(inputData));
-  inputData = _.concat(inputData, _.clone(inputData));
-  inputData = _.concat(inputData, _.clone(inputData));
+    inputData = _.concat(inputData, _.clone(inputData));
+    inputData = _.concat(inputData, _.clone(inputData));
+    inputData = _.concat(inputData, _.clone(inputData));
 
-  startTime = microtime.now();
+    startTime = process.hrtime();
 
-  async.forEach(inputData, function (location, done) {
-    pipService.lookup(location.latitude, location.longitude, function (err, results) {
-      location.results = results;
-      done();
+    async.forEach(inputData, function (location, done) {
+      pipService.lookup(location.latitude, location.longitude, function (err, results) {
+        location.results = results;
+        done();
+      });
+    },
+    function end() {
+      var reqDuration = getMicroSeconds(process.hrtime(startTime)) / inputData.length;
+      console.log('Query count = ', inputData.length);
+      console.log('Average duration (μsec) = ', reqDuration);
+      console.log('Computed req/sec = ', 1000000 / reqDuration);
+
+      fs.writeFileSync('./actualTestResuts.json', JSON.stringify(inputData, null, 2));
+
+      pipService.end();
+
+      callback();
     });
-  },
-  function end() {
-    var reqDuration = (microtime.now() - startTime) / inputData.length;
-    console.log('Query count = ', inputData.length);
-    console.log('Average duration (μsec) = ', reqDuration);
-    console.log('Computed req/sec = ', 1000000 / reqDuration);
 
-    fs.writeFileSync('./actualTestResuts.json', JSON.stringify(inputData, null, 2));
-
-    pipService.end();
   });
+};
 
+function getMicroSeconds(time) {
+  return (time[0] * 1e9 + time[1]) / 1000;
+}
+
+test(function (err) {
+  process.exit(err);
 });
