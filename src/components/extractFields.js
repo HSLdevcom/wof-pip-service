@@ -13,10 +13,6 @@ var wofLabels = peliasConfig.imports.wofPipNames || {};
 module.exports.create = function() {
   // this function extracts the id, name, placetype, hierarchy, and geometry
   return map.obj(function(wofData) {
-
-    at Function.Module._load (module.js:310:12)
-    at Module.require (module.js:365:17)
-    at require (module.js:384:17)
     var res = {
       properties: {
         Id: wofData.properties['wof:id'],
