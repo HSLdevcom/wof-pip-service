@@ -6,6 +6,10 @@ var _ = require('lodash');
 var iso3166 = require('iso3166-1');
 const logger = require('pelias-logger').get('extractFields');
 
+var peliasConfig = require( 'pelias-config' ).generate();
+
+var wofLabels = peliasConfig.imports.wofPipNames || {};
+
 module.exports.create = function() {
   // this function extracts the id, name, placetype, hierarchy, and geometry
   return map.obj(function(wofData) {
@@ -60,7 +64,8 @@ function getName(wofData) {
   }
 
   // attempt to use the following in order of priority and fallback to wof:name if all else fails
-  return getLocalizedName(wofData, 'wof:lang_x_spoken') ||
+  return getConfiguredName(wofData) ||
+    getLocalizedName(wofData, 'wof:lang_x_spoken') ||
     getLocalizedName(wofData, 'wof:lang_x_official') ||
     getLocalizedName(wofData, 'wof:lang') ||
     getPropertyValue(wofData, 'wof:label') ||
@@ -103,6 +108,30 @@ function getOfficialLangNames(wofData, langProperty) {
     keys.push('name:' + lang + '_x_preferred');
   });
   return keys;
+}
+
+function getConfiguredName(wofData) {
+  // use configured name if such one is defined
+
+  var type = wofData.properties['wof:placetype'];
+  var labels = wofLabels[type];
+  if (labels) {
+    var nameArray = [];
+    for (var i=0; i<labels.length; i++) {
+      var name = wofData.properties[labels[i]];
+      if (Array.isArray(name)) {
+        for (var j=0; j<name.length; j++) {
+          nameArray.push(name[j]);
+        }
+      } else {
+        nameArray.push(name);
+      }
+    }
+    if (nameArray.length) {
+      return nameArray;
+    }
+  }
+  return false;
 }
 
 /**
