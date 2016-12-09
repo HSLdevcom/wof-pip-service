@@ -13,11 +13,7 @@ var wofLabels = peliasConfig.imports.wofPipNames || {};
 module.exports.create = function() {
   // this function extracts the id, name, placetype, hierarchy, and geometry
   return map.obj(function(wofData) {
-
-    at Function.Module._load (module.js:310:12)
-    at Module.require (module.js:365:17)
-    at require (module.js:384:17)
-    var res = {
+    const res = {
       properties: {
         Id: wofData.properties['wof:id'],
         Name: getName(wofData),
@@ -43,7 +39,7 @@ module.exports.create = function() {
  * @returns {null|string}
  */
 function getAbbr(wofData) {
-  var iso2 = getPropertyValue(wofData, 'wof:country');
+  const iso2 = getPropertyValue(wofData, 'wof:country');
 
   // sometimes there are codes set to XX which cause an exception so check if it's a valid ISO2 code
   if (iso2 !== false && iso3166.is2(iso2)) {
