@@ -4,7 +4,7 @@
 var map = require('through2-map');
 var _ = require('lodash');
 var iso3166 = require('iso3166-1');
-var logger = require('pelias-logger').get('extractFields');
+const logger = require('pelias-logger').get('extractFields');
 
 var peliasConfig = require( 'pelias-config' ).generate();
 
