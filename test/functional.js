@@ -1,2 +1,0 @@
-require('./testDependencyMode');
-require('./testLayerLookup');
