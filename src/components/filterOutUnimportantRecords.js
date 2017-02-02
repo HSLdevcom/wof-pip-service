@@ -9,4 +9,4 @@ module.exports.create = function create() {
     return wofData.properties.hasOwnProperty('mz:hierarchy_label') &&
             wofData.properties['mz:hierarchy_label'] === 1;
   });
-}
+};
