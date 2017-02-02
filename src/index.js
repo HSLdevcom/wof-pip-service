@@ -38,13 +38,17 @@ var defaultLayers =  module.exports.defaultLayers =
 
 
 module.exports.create = function createPIPService(datapath, layers, callback) {
+
   // if layers is a function then it's the callback so use the default layers
-  if (_.isFunction(layers)) {
-    callback = layers;
+  if (!(layers instanceof Array)) {
+    if(typeof layers === 'function') {
+      callback = layers;
+    }
     layers = defaultLayers;
   }
 
   // load all workers, including country, which is a special case
+
   async.forEach(layers.concat('country'), function (layer, done) {
       startWorker(datapath, layer, function (err, worker) {
         workers[layer] = worker;
