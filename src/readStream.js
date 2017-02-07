@@ -1,8 +1,9 @@
+'use strict';
+
 var parse = require('csv-parse');
 var fs = require('fs');
+var path = require('path');
 var sink = require('through2-sink');
-var extractId = require('./components/extractId');
-var isValidId = require('./components/isValidId');
 var loadJSON = require('./components/loadJSON');
 var extractFields = require('./components/extractFields');
 var simplifyGeometry = require('./components/simplifyGeometry');
@@ -14,7 +15,7 @@ var filterOutUnimportantRecords = require('./components/filterOutUnimportantReco
   This function finds all the `latest` files in `meta/`, CSV parses them,
   pushes the ids onto an array and calls the callback
 */
-function readData(directory, layer, callback) {
+function readData(datapath, layer, callback) {
   var features = [];
 
   var options = {
@@ -22,11 +23,9 @@ function readData(directory, layer, callback) {
     columns: true
   };
 
-  fs.createReadStream(directory + 'meta/wof-' + layer + '-latest.csv')
+  fs.createReadStream(path.join(datapath, 'meta', `wof-${layer}-latest.csv`))
     .pipe(parse(options))
-    .pipe(extractId.create())
-    .pipe(isValidId.create())
-    .pipe(loadJSON.create(directory))
+    .pipe(loadJSON.create(datapath))
     .pipe(isActiveRecord.create())
     .pipe(filterOutNamelessRecords.create())
     .pipe(filterOutUnimportantRecords.create())

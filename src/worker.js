@@ -32,7 +32,7 @@ function messageHandler( msg ) {
 process.on( 'message', messageHandler );
 
 function elapsedTime() {
-  return ((Date.now() - context.startTime)/1000) + ' secs';
+  return ((Date.now() - context.startTime)/1000);
 }
 
 function handleLoadMsg(msg) {
@@ -40,10 +40,7 @@ function handleLoadMsg(msg) {
   process.title = context.layer;
   context.startTime = Date.now();
 
-  readStream(msg.directory, msg.layer, function(features) {
-    logger.info(features.length + ' ' + context.layer + ' record ids loaded in ' + elapsedTime());
-    logger.info(context.layer + ' finished building FeatureCollection in ' + elapsedTime());
-
+  readStream(msg.datapath, msg.layer, function(features) {
     context.featureCollection.features = features;
     context.adminLookup = new PolygonLookup( context.featureCollection );
 
@@ -55,10 +52,12 @@ function handleLoadMsg(msg) {
       }, {});
     }
 
-    logger.info( 'Done loading ' + context.layer );
-    logger.info(context.layer + ' finished loading ' + features.length + ' features in ' + elapsedTime());
-
-    process.send( {type: 'loaded', layer: context.layer} );
+    process.send( {
+      type: 'loaded',
+      layer: context.layer,
+      size: features.length,
+      seconds: elapsedTime()
+    });
 
   });
 

@@ -10,10 +10,9 @@
 var path = require('path');
 var childProcess = require( 'child_process' );
 var logger = require( 'pelias-logger' ).get( 'wof-pip-service:master' );
-var peliasConfig = require( 'pelias-config' ).generate();
 var async = require('async');
 var _ = require('lodash');
-
+var peliasConfig = require( 'pelias-config' ).generate();
 
 var requestCount = 0;
 // worker processes keyed on layer
@@ -22,36 +21,25 @@ var workers = {};
 var responseQueue = {};
 
 // don't include `country` here, it makes the bookkeeping more difficult later
-var defaultLayers = peliasConfig.imports.defaultAdminLayers || [
-  'borough', // 5
-  'county', // 18166
-  'dependency', // 39
-  'disputed', // 39
-  'localadmin', // 106880
-  'locality', // 160372
-  'macrocounty', // 350
-  'macroregion', // 82
-  'neighbourhood', // 62936
-  'region', // 4698
-  'postalcode'
-];
+var defaultLayers =  module.exports.defaultLayers =
+  peliasConfig.imports.defaultAdminLayers || [
+    'borough', // 5
+    'county', // 18166
+    'dependency', // 39
+    'disputed', // 39
+    'localadmin', // 106880
+    'locality', // 160372
+    'macrocounty', // 350
+    'macroregion', // 82
+    'neighbourhood', // 62936
+    'region', // 4698
+    'postalcode'
+  ];
 
-module.exports.defaultLayers = defaultLayers;
 
-module.exports.create = function createPIPService(layers, callback) {
-  if (!hasDataDirectory()) {
-    logger.error('Could not find imports.whosonfirst.datapath in configuration');
-    process.exit( 2 );
-  }
+module.exports.create = function createPIPService(datapath, layers, callback) {
 
-  var directory = peliasConfig.imports.whosonfirst.datapath;
-
-  if (!_.endsWith(directory, '/')) {
-    directory = directory + '/';
-  }
-
-  // if no layers were supplied, then use default layers and the only parameter
-  // is the callback
+  // if layers is a function then it's the callback so use the default layers
   if (!(layers instanceof Array)) {
     if(typeof layers === 'function') {
       callback = layers;
@@ -60,8 +48,9 @@ module.exports.create = function createPIPService(layers, callback) {
   }
 
   // load all workers, including country, which is a special case
+
   async.forEach(layers.concat('country'), function (layer, done) {
-      startWorker(directory, layer, function (err, worker) {
+      startWorker(datapath, layer, function (err, worker) {
         workers[layer] = worker;
         done();
       });
@@ -74,7 +63,7 @@ module.exports.create = function createPIPService(layers, callback) {
         lookup: function (latitude, longitude, responseCallback, search_layers) {
           if (search_layers === undefined) {
             search_layers = layers;
-          } else if (search_layers.length === 1 && search_layers[0] === 'country' && workers['country']) {
+          } else if (_.isEqual(search_layers, ['country']) && workers.country) {
             // in the case where only the country layer is to be searched
             // (and the country layer is loaded), keep search_layers unmodified
             // so that the country layer is queried directly
@@ -94,7 +83,7 @@ module.exports.create = function createPIPService(layers, callback) {
           }
 
           if (responseQueue.hasOwnProperty(id)) {
-            var msg = "Tried to create responseQueue item with id " + id + " that is already present";
+            var msg = `Tried to create responseQueue item with id ${id} that is already present`;
             logger.error(msg);
             return responseCallback(null, []);
           }
@@ -125,12 +114,12 @@ function killAllWorkers() {
   });
 }
 
-function startWorker(directory, layer, callback) {
+function startWorker(datapath, layer, callback) {
   var worker = childProcess.fork(path.join(__dirname, 'worker'));
 
   worker.on('message', function (msg) {
     if (msg.type === 'loaded') {
-      logger.info(msg, 'Worker ' + msg.layer + ' just told me it loaded!');
+      logger.info(`${msg.layer} worker loaded ${msg.size} features in ${msg.seconds} seconds`);
       callback(null, worker);
     }
 
@@ -142,7 +131,7 @@ function startWorker(directory, layer, callback) {
   worker.send({
     type: 'load',
     layer: layer,
-    directory: directory
+    datapath: datapath
   });
 }
 
@@ -151,7 +140,7 @@ function searchWorker(id, worker, coords) {
     type: 'search',
     id: id,
     coords: coords
-  })
+  });
 }
 
 function lookupCountryById(id, countryId) {
@@ -166,7 +155,7 @@ function handleResults(msg) {
   // logger.info('RESULTS:', JSON.stringify(msg, null, 2));
 
   if (!responseQueue.hasOwnProperty(msg.id)) {
-    logger.error("tried to handle results for missing id " + msg.id);
+    logger.error(`tried to handle results for missing id ${msg.id}`);
     return;
   }
 
@@ -230,16 +219,11 @@ function getId(results) {
 function lookupCountryByIdShouldBeCalled(q) {
   // helper that returns true if at least one Hierarchy of a result has a `country_id` property
   var hasCountryId = function(result) {
-    return result.Hierarchy.length > 0 &&
-            _.some(result.Hierarchy, function(h) { return h.hasOwnProperty('country_id')});
-  }
-
-  var isCountryPlacetype = function(result) {
-    return result.Placetype === 'country';
-  }
+    return _.some(result.Hierarchy, (h) => { return h.hasOwnProperty('country_id');});
+  };
 
   // don't call if no (or any) result has a country id
-  if (q.results.length === 0 || !_.some(q.results, hasCountryId)) {
+  if (!_.some(q.results, hasCountryId)) {
     return false;
   }
 
@@ -249,7 +233,8 @@ function lookupCountryByIdShouldBeCalled(q) {
   }
 
   // return true if there are no results with 'country' Placetype
-  return !_.some(q.results, isCountryPlacetype);
+  return !_.some(q.results, (result) => { return result.Placetype === 'country'; } );
+
 }
 
 // helper to determine if all requested layers have been called
@@ -266,9 +251,4 @@ function countryLayerShouldBeCalled(q, workers) {
   return q.results.length === 0 && // no non-country layers returned anything
           !q.countryLayerHasBeenCalled &&
           workers.hasOwnProperty('country');
-}
-
-function hasDataDirectory() {
-  return peliasConfig.imports.hasOwnProperty('whosonfirst') &&
-    peliasConfig.imports.whosonfirst.hasOwnProperty('datapath');
 }

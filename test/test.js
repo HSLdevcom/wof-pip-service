@@ -1,6 +1,7 @@
+require ('./serverTest.js');
+require ('./configValidationTest.js');
 require ('./components/extractFieldsTest.js');
-require ('./components/extractIdTest.js');
-require ('./components/isValidIdTest.js');
+require ('./components/extractFieldsLocalizedNameTest.js');
 require ('./components/loadJSONTest.js');
 require ('./components/simplifyGeometryTest.js');
 require ('./components/isActiveRecordTest.js');

@@ -9,7 +9,7 @@ module.exports.create = function() {
     return feature;
 
   });
-}
+};
 
 function simplifyGeometry(geometry) {
   if( geometry ) {
